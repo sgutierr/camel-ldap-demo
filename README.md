@@ -1,8 +1,8 @@
 # Camel LDAP demo 
 
-This example demonstrates how you can authenticate API calls against LDAP. This component uses Apache Camel with Spring Boot.
+This example demonstrates how to implement a Fuse-LDAP validator integrated with the 3scale API Gateway and authenticate inbound API calls against LDAP. This component based on Apache Camel with Spring Boot acts also as a reverse proxy forwarding all API traffic to the 3scale API Gateway.
 
-This is the diagram architecture of the typical flow:
+This is the diagram architecture of this component (LDAP validator):
 ![](doc/ScreenshotCamel-LDAP.png)
 
 ### Building
@@ -26,7 +26,7 @@ It is assumed that:
 
 The example can be built and run on OpenShift using a single goal:
 
-    mvn fabric8:deploy
+    mvn oc:deploy
 
 When the example runs in OpenShift, you can use the OpenShift client tool to inspect the status
 
