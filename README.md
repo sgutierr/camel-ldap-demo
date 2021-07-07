@@ -1,8 +1,9 @@
-# Spring-Boot Camel QuickStart
+# Camel LDAP demo 
 
-This example demonstrates how you can use Apache Camel with Spring Boot.
+This example demonstrates how you can authenticate API calls against LDAP. This component uses Apache Camel with Spring Boot.
 
-The quickstart uses Spring Boot to configure a little application that includes a Camel route that triggers a message every 5th second, and routes the message to a log.
+This is the diagram architecture of the typical flow:
+![](doc/ScreenshotCamel-LDAP.png)
 
 ### Building
 
