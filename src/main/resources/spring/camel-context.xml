@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="        http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring       https://camel.apache.org/schema/spring/camel-spring.xsd">
+    <bean
+        class="org.springframework.ldap.core.support.LdapContextSource" id="ldapContextSource">
+        <property name="url" value="${url}"/>
+        <property name="base" value="${base}"/>
+        <property name="userDn" value="${userDN}"/>
+        <property name="password" value="${ldapPassword}"/>
+    </bean>
+    <bean class="java.util.Properties" id="myProperties"/>
+    <bean
+        class="org.apache.camel.component.properties.PropertiesComponent" id="properties">
+        <property name="cache" value="false"/>
+        <property name="location" value="/src/main/resources/ldap.properties"/>
+        <property name="overrideProperties" ref="myProperties"/>
+    </bean>
+    <bean class="java.util.HashMap" id="mapFilter">
+        <constructor-arg>
+            <map key-type="java.lang.String" value-type="java.lang.String">
+                <entry key="filter" value="${filter})"/>
+                <entry key="password" value="${password}"/>
+                <entry key="dn" value="${dn}"/>
+            </map>
+        </constructor-arg>
+    </bean>
+    <bean class="org.mycompany.StringCache" id="cache"/>
+    <bean class="org.springframework.ldap.core.LdapTemplate" id="ldapTemplate">
+        <constructor-arg ref="ldapContextSource"/>
+    </bean>
+    <bean class="org.mycompany.LDAPSearchProcessor" id="ldapSearchProcessor"/>
+    <camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
+        <package>org.mycompany</package>
+        <route id="netty_route">
+            <from id="_from1" uri="netty4-http:http://0.0.0.0:8080"/>
+            <choice id="_choice1">
+                <description>Choice_action</description>
+                <when id="_when1">
+                    <simple> ${bean:cache?method=isItemCached(${in.header.username})}</simple>
+                    <log id="log_no_header" message="Credentials already cached"/>
+                    <removeHeaders id="_removeHeaders1" pattern="CamelHttp*"/>
+                    <to id="_to23" uri="direct:ProxyRoute"/>
+                </when>
+                <otherwise id="_otherwise1">
+                    <log id="route-log10" message="header user >>> ${in.header.username} header pass >>> ${in.header.pass}"/>
+                    <bean id="_bean1"
+                        method="put(filter, (uid=${in.header.username}))" ref="mapFilter"/>
+                    <bean id="_bean2"
+                        method="put(password, ${in.header.pass})" ref="mapFilter"/>
+                    <log id="route-log22" message="FILTER VALUE >>> ${bean:mapFilter?method=get(filter)} PASS VALUE >>> ${bean:mapFilter?method=get(pass)}"/>
+                    <to id="_to3" uri="direct:LDAP_Route"/>
+                </otherwise>
+            </choice>
+        </route>
+        <route id="LDAP_Route">
+            <from id="_from9" uri="direct:LDAP_Route"/>
+            <setBody id="_setBody1">
+                <simple>${ref:mapFilter}</simple>
+            </setBody>
+            <log id="route-log2" message="Before >>> ${body}"/>
+            <to id="_to1" uri="spring-ldap:ldapTemplate?operation=AUTHENTICATE"/>
+            <to id="_to2" uri="bean:ldapSearchProcessor"/>
+            <bean id="_beanAddCache"
+                method="addItem(${in.header.username})" ref="cache"/>
+            <removeHeaders id="_removeHeaders2" pattern="CamelHttp*"/>
+            <to id="_toproxy" uri="direct:ProxyRoute"/>
+        </route>
+    </camelContext>
+</beans>
